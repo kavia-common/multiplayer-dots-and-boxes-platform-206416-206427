@@ -1,0 +1,419 @@
+:root {
+  --bg: #f9fafb;
+  --surface: #ffffff;
+  --ink: #111827;
+  --muted: #64748b;
+  --primary: #3b82f6;
+  --success: #06b6d4;
+  --danger: #ef4444;
+
+  --shadow: 0 10px 30px rgba(17, 24, 39, 0.08);
+  --border: rgba(17, 24, 39, 0.12);
+  --grid: rgba(17, 24, 39, 0.06);
+
+  --radius: 14px;
+  --radius-sm: 10px;
+
+  --font: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+}
+
+[data-theme="dark"] {
+  --bg: #0b1220;
+  --surface: #101a2f;
+  --ink: #e5e7eb;
+  --muted: rgba(229, 231, 235, 0.7);
+  --border: rgba(229, 231, 235, 0.14);
+  --grid: rgba(229, 231, 235, 0.07);
+  --shadow: 0 18px 45px rgba(0, 0, 0, 0.35);
+}
+
+.retro-app {
+  min-height: 100vh;
+  background:
+    radial-gradient(circle at 15% 10%, rgba(59, 130, 246, 0.14), transparent 42%),
+    radial-gradient(circle at 80% 25%, rgba(6, 182, 212, 0.12), transparent 40%),
+    linear-gradient(180deg, var(--bg), var(--bg));
+  color: var(--ink);
+  font-family: var(--font);
+}
+
+.retro-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 18px 22px;
+  border-bottom: 1px solid var(--border);
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  background: rgba(255, 255, 255, 0.65);
+  backdrop-filter: blur(12px);
+}
+
+[data-theme="dark"] .retro-header {
+  background: rgba(16, 26, 47, 0.75);
+}
+
+.retro-brand {
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.retro-subtitle {
+  font-size: 12px;
+  color: var(--muted);
+  margin-top: 4px;
+}
+
+.retro-row {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+.retro-rowEnd {
+  justify-content: flex-end;
+}
+.retro-rowStack {
+  flex-direction: column;
+  align-items: stretch;
+}
+
+.retro-btn {
+  appearance: none;
+  border: 1px solid var(--border);
+  background: linear-gradient(180deg, rgba(59, 130, 246, 0.12), rgba(59, 130, 246, 0.05));
+  color: var(--ink);
+  padding: 10px 12px;
+  border-radius: 12px;
+  cursor: pointer;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  box-shadow: 0 6px 0 rgba(17, 24, 39, 0.06);
+}
+.retro-btn:hover {
+  border-color: rgba(59, 130, 246, 0.55);
+  transform: translateY(-1px);
+}
+.retro-btn:active {
+  transform: translateY(1px);
+  box-shadow: 0 3px 0 rgba(17, 24, 39, 0.06);
+}
+.retro-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.retro-btnGhost {
+  background: transparent;
+}
+
+.retro-iconBtn {
+  border: 1px solid var(--border);
+  background: transparent;
+  border-radius: 10px;
+  padding: 6px 10px;
+  cursor: pointer;
+  color: var(--ink);
+}
+
+.retro-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 320px;
+  gap: 18px;
+  padding: 18px 22px 26px;
+  max-width: 1250px;
+  margin: 0 auto;
+}
+
+@media (max-width: 980px) {
+  .retro-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+.retro-stage {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  box-shadow: var(--shadow);
+  padding: 18px;
+  min-height: 420px;
+}
+
+.retro-sidebar {
+  position: sticky;
+  top: 92px;
+  align-self: start;
+}
+
+@media (max-width: 980px) {
+  .retro-sidebar {
+    position: static;
+  }
+}
+
+.retro-panel {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  box-shadow: var(--shadow);
+  padding: 14px;
+  margin-bottom: 14px;
+}
+
+.retro-panelTitle {
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  font-size: 12px;
+  color: var(--muted);
+  margin-bottom: 10px;
+}
+
+.retro-kv {
+  display: grid;
+  grid-template-columns: 84px 1fr;
+  gap: 10px;
+  padding: 6px 0;
+  font-size: 13px;
+}
+.retro-kv .k {
+  color: var(--muted);
+}
+.retro-kv .v {
+  font-weight: 700;
+}
+
+.retro-divider {
+  height: 1px;
+  background: var(--border);
+  margin: 12px 0;
+}
+
+.retro-help {
+  font-size: 12px;
+  color: var(--muted);
+  margin-top: 10px;
+}
+
+.retro-warn {
+  margin-top: 10px;
+  font-size: 12px;
+  color: var(--danger);
+}
+
+.retro-tag {
+  display: inline-block;
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 0.05em;
+  padding: 3px 7px;
+  border-radius: 999px;
+  margin-left: 8px;
+  border: 1px solid var(--border);
+  color: var(--ink);
+  background: rgba(17, 24, 39, 0.04);
+}
+
+.retro-tagCyan {
+  background: rgba(6, 182, 212, 0.12);
+  border-color: rgba(6, 182, 212, 0.35);
+}
+
+.retro-playerList {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.retro-playerRow {
+  display: grid;
+  grid-template-columns: 12px 1fr;
+  gap: 10px;
+  align-items: center;
+  padding: 10px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: rgba(17, 24, 39, 0.02);
+}
+.retro-playerRow.isActive {
+  border-color: rgba(6, 182, 212, 0.55);
+  background: rgba(6, 182, 212, 0.08);
+}
+
+.retro-playerSwatch {
+  width: 12px;
+  height: 36px;
+  border-radius: 6px;
+}
+
+.retro-playerName {
+  font-weight: 900;
+}
+.retro-playerSub {
+  font-size: 12px;
+  color: var(--muted);
+  margin-top: 2px;
+}
+
+.retro-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.retro-label {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-weight: 800;
+  font-size: 12px;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
+.retro-input {
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--ink);
+  font-family: var(--font);
+  font-weight: 700;
+}
+
+.retro-grid2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+@media (max-width: 520px) {
+  .retro-grid2 {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Board */
+.retro-boardWrap {
+  width: 100%;
+  display: grid;
+  place-items: center;
+}
+
+.retro-board {
+  display: grid;
+  gap: 0px;
+  padding: 14px;
+  border-radius: var(--radius);
+  background:
+    linear-gradient(0deg, var(--grid) 1px, transparent 1px) 0 0 / var(--cell) var(--cell),
+    linear-gradient(90deg, var(--grid) 1px, transparent 1px) 0 0 / var(--cell) var(--cell),
+    var(--surface);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow);
+}
+
+.retro-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  background: var(--ink);
+  justify-self: center;
+  align-self: center;
+  box-shadow: 0 0 0 3px rgba(17, 24, 39, 0.06);
+}
+
+[data-theme="dark"] .retro-dot {
+  background: #e5e7eb;
+  box-shadow: 0 0 0 3px rgba(229, 231, 235, 0.08);
+}
+
+.retro-edge {
+  border: 1px solid rgba(17, 24, 39, 0.15);
+  border-radius: 10px;
+  background: transparent;
+  cursor: pointer;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+}
+.retro-edge:hover:not(:disabled) {
+  border-color: rgba(59, 130, 246, 0.6);
+  box-shadow: inset 0 0 0 2px rgba(59, 130, 246, 0.15);
+}
+.retro-edge:disabled {
+  cursor: not-allowed;
+}
+.retro-edgeH {
+  align-self: center;
+  height: 12px;
+  width: calc(var(--cell) - 10px);
+  justify-self: center;
+}
+.retro-edgeV {
+  justify-self: center;
+  width: 12px;
+  height: calc(var(--cell) - 10px);
+  align-self: center;
+}
+
+.retro-box {
+  width: calc(var(--cell) - 12px);
+  height: calc(var(--cell) - 12px);
+  justify-self: center;
+  align-self: center;
+  border-radius: 12px;
+  border: 1px dashed transparent;
+}
+
+.retro-modalBackdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  display: grid;
+  place-items: center;
+  z-index: 20;
+  padding: 20px;
+}
+
+.retro-modal {
+  width: min(560px, 96vw);
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  background: var(--surface);
+  box-shadow: var(--shadow);
+  overflow: hidden;
+}
+
+.retro-modalHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 14px 14px 10px;
+  border-bottom: 1px solid var(--border);
+}
+
+.retro-modalTitle {
+  font-weight: 900;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  font-size: 13px;
+}
+
+.retro-modalBody {
+  padding: 14px;
+}
+
+.retro-modalFooter {
+  padding: 14px;
+  border-top: 1px solid var(--border);
+}
+
+.retro-bigText {
+  font-weight: 900;
+  font-size: 18px;
+}
