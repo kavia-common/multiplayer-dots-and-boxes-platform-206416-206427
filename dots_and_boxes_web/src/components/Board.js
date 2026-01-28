@@ -20,7 +20,7 @@ export function Board({ board, players, onEdgeClick, activePlayerId, disabled })
 
   const playerIndexById = useMemo(() => {
     const map = new Map();
-    (players || []).forEach((p, idx) => map.set(p.id, p.colorIndex ?? idx));
+    (players || []).forEach((p, idx) => map.set(p.playerId, idx));
     return map;
   }, [players]);
 

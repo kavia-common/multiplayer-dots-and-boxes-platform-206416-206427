@@ -8,7 +8,6 @@ export function Sidebar({
   roomCode,
   connectionState,
   players,
-  scores,
   activePlayerId,
   selfPlayerId,
   phase,
@@ -17,8 +16,8 @@ export function Sidebar({
   onLeave,
 }) {
   /** Sidebar with players list, scores, and room actions. */
-  const active = players?.find((p) => p.id === activePlayerId);
-  const self = players?.find((p) => p.id === selfPlayerId);
+  const active = players?.find((p) => p.playerId === activePlayerId);
+  const self = players?.find((p) => p.playerId === selfPlayerId);
 
   return (
     <aside className="retro-sidebar">
@@ -42,19 +41,20 @@ export function Sidebar({
         <div className="retro-panelTitle">Players</div>
         <div className="retro-playerList">
           {(players || []).map((p, idx) => {
-            const color = PLAYER_COLORS[p.colorIndex ?? idx];
-            const isActive = p.id === activePlayerId;
-            const isSelf = p.id === selfPlayerId;
+            const color = PLAYER_COLORS[idx % PLAYER_COLORS.length];
+            const isActive = p.playerId === activePlayerId;
+            const isSelf = p.playerId === selfPlayerId;
             return (
-              <div key={p.id} className={`retro-playerRow ${isActive ? 'isActive' : ''}`}>
+              <div key={p.playerId} className={`retro-playerRow ${isActive ? 'isActive' : ''}`}>
                 <div className="retro-playerSwatch" style={{ background: color }} aria-hidden />
                 <div className="retro-playerMeta">
                   <div className="retro-playerName">
-                    {p.name || 'Player'} {isSelf ? <span className="retro-tag">YOU</span> : null}{' '}
+                    {p.nickname || 'Player'} {p.isHost ? <span className="retro-tag">HOST</span> : null}{' '}
+                    {isSelf ? <span className="retro-tag">YOU</span> : null}{' '}
                     {isActive ? <span className="retro-tag retro-tagCyan">TURN</span> : null}
                   </div>
                   <div className="retro-playerSub">
-                    Score: <strong>{scores?.[p.id] ?? 0}</strong> {p.ready ? <span className="retro-tag">READY</span> : null}
+                    Score: <strong>{p.score ?? 0}</strong> {p.ready ? <span className="retro-tag">READY</span> : null}
                   </div>
                 </div>
               </div>
@@ -81,7 +81,7 @@ export function Sidebar({
           </button>
         </div>
 
-        {active ? <div className="retro-help">It’s {active.name}’s turn.</div> : null}
+        {active ? <div className="retro-help">It’s {active.nickname || 'Player'}’s turn.</div> : null}
       </div>
     </aside>
   );

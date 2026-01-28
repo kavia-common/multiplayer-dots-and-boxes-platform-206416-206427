@@ -16,14 +16,36 @@ function randomId(prefix = 'p') {
   return `${prefix}_${Math.random().toString(16).slice(2)}${Date.now().toString(16)}`;
 }
 
-function computeWinnerText(players, scores) {
+function computeWinnerText(players) {
   if (!players?.length) return 'Game over.';
-  const ordered = [...players].sort((a, b) => (scores?.[b.id] ?? 0) - (scores?.[a.id] ?? 0));
+  const ordered = [...players].sort((a, b) => (b.score ?? 0) - (a.score ?? 0));
   const top = ordered[0];
-  const topScore = scores?.[top.id] ?? 0;
-  const tied = ordered.filter((p) => (scores?.[p.id] ?? 0) === topScore);
+  const topScore = top.score ?? 0;
+  const tied = ordered.filter((p) => (p.score ?? 0) === topScore);
   if (tied.length > 1) return `It’s a tie at ${topScore}!`;
-  return `${top.name} wins with ${topScore}!`;
+  return `${top.nickname || 'Player'} wins with ${topScore}!`;
+}
+
+function roomToUi(room) {
+  // Backend canonical model:
+  // room: {roomCode,status,players:[{playerId,nickname,ready,score,isHost}], board, currentPlayerId, winner}
+  if (!room) return null;
+
+  const statusToPhase = (s) => {
+    if (s === 'lobby') return 'lobby';
+    if (s === 'playing') return 'playing';
+    if (s === 'finished') return 'finished';
+    return 'idle';
+  };
+
+  return {
+    roomCode: room.roomCode,
+    phase: statusToPhase(room.status),
+    players: Array.isArray(room.players) ? room.players : [],
+    activePlayerId: room.currentPlayerId || '',
+    board: room.board,
+    winner: room.winner || null,
+  };
 }
 
 // PUBLIC_INTERFACE
@@ -36,7 +58,6 @@ function App() {
   const [selfPlayerId, setSelfPlayerId] = useState('');
   const [phase, setPhase] = useState('idle'); // idle | lobby | playing | finished
   const [players, setPlayers] = useState([]);
-  const [scores, setScores] = useState({});
   const [activePlayerId, setActivePlayerId] = useState('');
   const [board, setBoard] = useState(() => makeEmptyBoard(5));
   const [connectionState, setConnectionState] = useState('offline');
@@ -80,7 +101,6 @@ function App() {
     setSelfPlayerId('');
     setPhase('idle');
     setPlayers([]);
-    setScores({});
     setActivePlayerId('');
     setBoard(makeEmptyBoard(5));
     setConnectionState('offline');
@@ -94,22 +114,24 @@ function App() {
         reconnect: true,
         onStatus: (s) => setConnectionState(s.state),
         onMessage: (msg) => {
-          // Expected (planned) messages:
-          // { type: 'state', data: { roomCode, phase, players, scores, activePlayerId, board } }
-          // { type: 'game_over', data: { winnerPlayerId, scores } }
+          // Backend messages:
+          // - { type: 'room_state', room: {...}, event?: {...} }
+          // - { type: 'pong' }
+          // - { type: 'error', message: '...' }
           if (!msg || typeof msg !== 'object') return;
-          if (msg.type === 'state' && msg.data) {
-            const d = msg.data;
-            if (d.roomCode) setRoomCode(d.roomCode);
-            if (d.phase) setPhase(d.phase);
-            if (Array.isArray(d.players)) setPlayers(d.players);
-            if (d.scores) setScores(d.scores);
-            if (d.activePlayerId) setActivePlayerId(d.activePlayerId);
-            if (d.board) setBoard(d.board);
-          }
-          if (msg.type === 'game_over') {
-            setPhase('finished');
-            setWinnerOpen(true);
+
+          if (msg.type === 'room_state' && msg.room) {
+            const ui = roomToUi(msg.room);
+            if (!ui) return;
+
+            setRoomCode(ui.roomCode || code);
+            setPhase(ui.phase);
+            setPlayers(ui.players);
+            setActivePlayerId(ui.activePlayerId);
+            if (ui.board) setBoard(ui.board);
+
+            // Winner modal control
+            if (ui.phase === 'finished') setWinnerOpen(true);
           }
         },
       });
@@ -122,28 +144,23 @@ function App() {
   };
 
   const ensureLocalLobbyIfBackendMissing = (code, nickname, boardSize, maxPlayers) => {
-    // Since backend is currently template-level, provide a local-only fallback so UI is usable.
-    // This will be replaced by server state once endpoints exist.
+    // Fallback mode uses the same shape as backend to avoid bifurcated UI logic.
     const pid = randomId('player');
     setSelfPlayerId(pid);
     setRoomCode(code || 'LOCAL');
     setPhase('lobby');
 
     const ps = [
-      { id: pid, name: nickname, ready: false, colorIndex: 0, isHost: true },
+      { playerId: pid, nickname: nickname || 'Player 1', ready: false, score: 0, isHost: true },
       ...Array.from({ length: Math.max(0, (maxPlayers || 2) - 1) }).map((_, i) => ({
-        id: randomId('bot'),
-        name: `BOT_${i + 1}`,
+        playerId: randomId('bot'),
+        nickname: `BOT_${i + 1}`,
         ready: true,
-        colorIndex: i + 1,
+        score: 0,
         isHost: false,
       })),
     ];
     setPlayers(ps);
-
-    const sc = {};
-    ps.forEach((p) => (sc[p.id] = 0));
-    setScores(sc);
 
     setBoard(makeEmptyBoard(boardSize || 5));
     setActivePlayerId(pid);
@@ -154,22 +171,22 @@ function App() {
     setStatusText('Creating room...');
     try {
       const resp = await createRoom({ nickname, boardSize, maxPlayers });
-      // planned resp: { roomCode, playerId, players, scores, board, phase, activePlayerId }
-      const code = resp?.roomCode || resp?.code;
+      // Backend: { room: {...}, playerId: '...' }
+      const room = resp?.room;
       const pid = resp?.playerId;
+      const ui = roomToUi(room);
 
-      if (!code || !pid) throw new Error('Backend returned unexpected response.');
+      if (!ui?.roomCode || !pid) throw new Error('Backend returned unexpected response.');
 
-      setRoomCode(code);
+      setRoomCode(ui.roomCode);
       setSelfPlayerId(pid);
-      setPlayers(resp.players || []);
-      setScores(resp.scores || {});
-      setBoard(resp.board || makeEmptyBoard(boardSize));
-      setPhase(resp.phase || 'lobby');
-      setActivePlayerId(resp.activePlayerId || pid);
+      setPlayers(ui.players);
+      setBoard(ui.board || makeEmptyBoard(boardSize));
+      setPhase(ui.phase);
+      setActivePlayerId(ui.activePlayerId || pid);
 
-      connectWs(code);
-      setStatusText(`Room created: ${code}`);
+      connectWs(ui.roomCode);
+      setStatusText(`Room created: ${ui.roomCode}`);
     } catch (e) {
       setStatusText(`Create failed (using local fallback): ${e.message}`);
       ensureLocalLobbyIfBackendMissing('LOCAL', nickname, boardSize, maxPlayers);
@@ -181,16 +198,12 @@ function App() {
     setStatusText('Joining room...');
     try {
       const resp = await joinRoom(code, { nickname });
+      // Backend currently returns only {playerId}; get room via WS or GET /rooms/{code}.
       const pid = resp?.playerId;
       if (!pid) throw new Error('Backend returned unexpected response.');
 
       setRoomCode(code);
       setSelfPlayerId(pid);
-      setPlayers(resp.players || []);
-      setScores(resp.scores || {});
-      setBoard(resp.board || makeEmptyBoard(5));
-      setPhase(resp.phase || 'lobby');
-      setActivePlayerId(resp.activePlayerId || '');
 
       connectWs(code);
       setStatusText(`Joined: ${code}`);
@@ -216,11 +229,10 @@ function App() {
     if (!roomCode || !selfPlayerId) return;
     setStatusText(ready ? 'Ready.' : 'Not ready.');
     // optimistic local update
-    setPlayers((prev) => prev.map((p) => (p.id === selfPlayerId ? { ...p, ready: !!ready } : p)));
+    setPlayers((prev) => prev.map((p) => (p.playerId === selfPlayerId ? { ...p, ready: !!ready } : p)));
 
     try {
       await readyUp(roomCode, { playerId: selfPlayerId, ready: !!ready });
-      wsRef.current?.sendAction('ready', { playerId: selfPlayerId, ready: !!ready });
     } catch (_e) {
       // fallback local-only
     }
@@ -231,10 +243,9 @@ function App() {
     setStatusText('Starting...');
     try {
       await startGame(roomCode, { playerId: selfPlayerId });
-      wsRef.current?.sendAction('start', { playerId: selfPlayerId });
     } catch (_e) {
       // local fallback: start if all ready
-      const allReady = players.length > 0 && players.every((p) => p.ready || p.id === selfPlayerId);
+      const allReady = players.length > 0 && players.every((p) => p.ready || p.playerId === selfPlayerId);
       if (!allReady) {
         setStatusText('All players must be ready.');
         return;
@@ -246,9 +257,9 @@ function App() {
 
   const localAdvanceTurn = (currentPid) => {
     if (!players?.length) return currentPid;
-    const idx = players.findIndex((p) => p.id === currentPid);
+    const idx = players.findIndex((p) => p.playerId === currentPid);
     const next = players[(idx + 1) % players.length];
-    return next?.id || currentPid;
+    return next?.playerId || currentPid;
   };
 
   const onEdgeClick = async (edge) => {
@@ -261,15 +272,13 @@ function App() {
     if (nextBoard === board) return;
 
     setBoard(nextBoard);
-    setScores((prev) => ({
-      ...prev,
-      [selfPlayerId]: (prev[selfPlayerId] ?? 0) + (scored ? 1 : 0),
-    }));
+    setPlayers((prev) =>
+      prev.map((p) => (p.playerId === selfPlayerId ? { ...p, score: (p.score ?? 0) + (scored ? 1 : 0) } : p))
+    );
     setActivePlayerId((prev) => (scored ? prev : localAdvanceTurn(prev)));
 
     try {
       await drawEdge(roomCode, { playerId: selfPlayerId, edge });
-      wsRef.current?.sendAction('move', { playerId: selfPlayerId, edge });
     } catch (_e) {
       // local-only
     }
@@ -289,22 +298,20 @@ function App() {
     setStatusText('Rematch requested...');
     try {
       await rematch(roomCode, { playerId: selfPlayerId });
-      wsRef.current?.sendAction('rematch', { playerId: selfPlayerId });
     } catch (_e) {
-      // local fallback: reset board/scores, keep lobby/playing semantics simple
+      // local fallback: reset board/scores
       const empty = makeEmptyBoard(board.boardSize);
-      const sc = {};
-      (players || []).forEach((p) => (sc[p.id] = 0));
-      setScores(sc);
       setBoard(empty);
       setPhase('lobby');
-      setPlayers((prev) => prev.map((p) => ({ ...p, ready: p.id !== selfPlayerId })));
+      setPlayers((prev) =>
+        prev.map((p) => ({ ...p, score: 0, ready: p.playerId !== selfPlayerId }))
+      );
       setActivePlayerId(selfPlayerId);
       setStatusText('Rematch reset (local).');
     }
   };
 
-  const winnerText = useMemo(() => computeWinnerText(players, scores), [players, scores]);
+  const winnerText = useMemo(() => computeWinnerText(players), [players]);
 
   const onCopyRoom = async () => {
     if (!roomCode) return;
@@ -355,7 +362,6 @@ function App() {
           roomCode={roomCode}
           connectionState={connectionState}
           players={players}
-          scores={scores}
           activePlayerId={activePlayerId}
           selfPlayerId={selfPlayerId}
           phase={phase}
